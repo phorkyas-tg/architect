@@ -234,11 +234,9 @@ class Level extends Phaser.Scene
         let isAllPathsConnected = this.checkAllPathsConnected()
         console.log("paths connected", isAllPathsConnected)
 
-        // are all bosses in a 3x3 room?
+        // are all bosses in a 3x3 room with only one entry?
 
-        // no 2x2 square except room
-
-        // has bosses room only one entry?
+        // no 2x2 square except boss rooms
         
         if(isWallCorrect && isDroneCorrect){
             console.log("you win")
@@ -246,16 +244,12 @@ class Level extends Phaser.Scene
     }
 
     checkAllPathsConnected() {
-        let numberOfNonWalls = 0
         let paths = []
-        let pathsAsString = []
 
         for (let y=0; y < NUM_TILES; y++) {
             for (let x=0; x < NUM_TILES; x++) {
                 if (this.board[x][y].frame.name != WALL_TILE) {
-                    numberOfNonWalls++
                     paths.push([this.board[x][y].xPos, this.board[x][y].yPos])
-                    pathsAsString.push(this.getPosAsString(this.board[x][y].xPos, this.board[x][y].yPos))
                 }
             }
         }
