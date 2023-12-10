@@ -17,7 +17,7 @@ const MINT_HASH = "#aaf0d1"
 const SCALE = 1;
 const FLOOR_TILE = 37;
 const WALL_TILE = 44;
-const ROCCO = 0
+const BOSS = 0
 const DRONE = 10
 
 
@@ -38,7 +38,7 @@ class Level extends Phaser.Scene
         this.column = [1, 4, 2, 7, 0, 4, 4, 4]
         this.row = [3, 2, 5, 3, 4, 1, 4, 4]
         // list of strings x_y
-        this.roccos = ["1_5"];
+        this.bosses = ["1_5"];
         this.drones = ["7_1", "2_2", "7_3", "7_5", "7_7"];
 
         this.board = []
@@ -89,9 +89,9 @@ class Level extends Phaser.Scene
 
 
                 let tile = null
-                if (this.roccos.includes(this.getPosAsString(x-1, y-1))) {
-                    tile = this.physics.add.sprite(padX + SCALE * x * TILE_WIDTH, padY + SCALE * y * TILE_HEIGHT, 'tileSprite', ROCCO)
-                    tile.tileType = ROCCO
+                if (this.bosses.includes(this.getPosAsString(x-1, y-1))) {
+                    tile = this.physics.add.sprite(padX + SCALE * x * TILE_WIDTH, padY + SCALE * y * TILE_HEIGHT, 'tileSprite', BOSS)
+                    tile.tileType = BOSS
                 }
                 else if (this.drones.includes(this.getPosAsString(x-1, y-1))) {
                     tile = this.physics.add.sprite(padX + SCALE * x * TILE_WIDTH, padY + SCALE * y * TILE_HEIGHT, 'tileSprite', DRONE)
@@ -162,6 +162,7 @@ class Level extends Phaser.Scene
         else {
             tile.setFrame(WALL_TILE)
         }
+        tile.update()
 
         this.updateNumbers()
     }
@@ -173,6 +174,7 @@ class Level extends Phaser.Scene
         else {
             tile.setFrame(WALL_TILE)
         }
+        
 
         this.updateNumbers()
     }
@@ -215,23 +217,86 @@ class Level extends Phaser.Scene
             }
         }
 
-        if (correctWalls == 2 * NUM_TILES){
-            console.log("walls correct")
-            // has every drone only one path?
-            let isDroneCorrect = this.checkDrones()
-            console.log(isDroneCorrect)
+        this.checkForWin(correctWalls)
 
-            // are all paths connectes?
+    }
 
-            // are all roccos in a 3x3 room?
+    checkForWin(correctWalls) {
+        let isWallCorrect = correctWalls == 2 * NUM_TILES
+        console.log("walls correct", isWallCorrect)
+        // if (!isWallCorrect) {return false}
+        
+        // has every drone only one path?
+        let isDroneCorrect = this.checkDrones()
+        console.log("drones correct", isDroneCorrect)
 
-            // has roccos room only one entry?
+        // are all paths connected?
+        let isAllPathsConnected = this.checkAllPathsConnected()
+        console.log("paths connected", isAllPathsConnected)
+
+        // are all bosses in a 3x3 room?
+
+        // no 2x2 square except room
+
+        // has bosses room only one entry?
+        
+        if(isWallCorrect && isDroneCorrect){
+            console.log("you win")
+        }
+    }
+
+    checkAllPathsConnected() {
+        let numberOfNonWalls = 0
+        let paths = []
+        let pathsAsString = []
+
+        for (let y=0; y < NUM_TILES; y++) {
+            for (let x=0; x < NUM_TILES; x++) {
+                if (this.board[x][y].frame.name != WALL_TILE) {
+                    numberOfNonWalls++
+                    paths.push([this.board[x][y].xPos, this.board[x][y].yPos])
+                    pathsAsString.push(this.getPosAsString(this.board[x][y].xPos, this.board[x][y].yPos))
+                }
+            }
         }
 
+        let visited = []
+        let toVisit = [this.getArrayPosAsString(paths[0])]
+        
+        while (toVisit.length > 0) {
+            let next = toVisit.pop()
+            let adj = this.getAdjacend(this.getStringAsPos(next))
+
+            for (let j=0; j < adj.length; j++) {
+                let adjPos = adj[j]
+                let adjPosString = this.getArrayPosAsString(adjPos)
+                let adjTile = this.board[adjPos[1]][adjPos[0]]
+
+                if (adjTile.frame.name != WALL_TILE) {
+                    if (visited.includes(adjPosString)) {
+                        continue
+                    }
+                    else if (toVisit.includes(adjPosString)){
+                        continue
+                    }
+                    else {
+                        toVisit.push(adjPosString)
+                    }
+                }
+            }
+
+            visited.push(next)
+        }
+
+        return visited.length == paths.length
     }
 
     getPosAsString(x, y) {
         return x.toString() + "_" + y.toString()
+    }
+
+    getArrayPosAsString(xyArray) {
+        return this.getPosAsString(xyArray[0], xyArray[1])
     }
 
     getStringAsPos(pos) {
@@ -259,29 +324,29 @@ class Level extends Phaser.Scene
         for (let i=0; i < this.drones.length; i++) {
             let pos = this.getStringAsPos(this.drones[i])
             let adj = this.getAdjacend(pos)
-            console.log(pos, adj)
 
             let pathCount = 0
             for (let j=0; j < adj.length; j++) {
                 let adjPos = adj[j]
-                let adjTile = this.board[adjPos[0]][adjPos[1]]
+                let adjTile = this.board[adjPos[1]][adjPos[0]]
 
-                console.log(adjTile.tileType, adjTile.frame.name)
-                if (adjTile.tileType === FLOOR_TILE && adjTile.frame.name === FLOOR_TILE) {
+                if (this.isPath(adjTile)) {
                     pathCount++
-                    console.log(adjPos, "path")
-                }
-                else{
-                    console.log(adjPos, "wall")
                 }
             }
 
-            console.log(pathCount)
             if (pathCount != 1) {
-                console.log("false")
+                return false
             }
         }
         return true
+    }
+
+    isPath(tile) {
+        if (tile.tileType == FLOOR_TILE && tile.frame.name == FLOOR_TILE) {
+            return true
+        }
+        return false
     }
 
 
