@@ -35,11 +35,35 @@ class Level extends Phaser.Scene
         this.gameOver = false
         this.maxRounds = 12
 
-        this.column = [1, 4, 2, 7, 0, 4, 4, 4]
-        this.row = [3, 2, 5, 3, 4, 1, 4, 4]
-        // list of strings x_y
-        this.bosses = ["1_5"];
-        this.drones = ["7_1", "2_2", "7_3", "7_5", "7_7"];
+        // LVL 1
+        // this.column = [1, 4, 2, 7, 0, 4, 4, 4]
+        // this.row = [3, 2, 5, 3, 4, 1, 4, 4]
+        // this.bosses = ["1_5"];
+        // this.drones = ["7_1", "2_2", "7_3", "7_5", "7_7"];
+
+        // LVL 2
+        // this.column = [6, 2, 4, 1, 5 ,4, 4, 5]
+        // this.row = [4, 4, 4, 4, 3, 4, 2, 6]
+        // this.bosses = ["1_2"];
+        // this.drones = ["6_0", "1_4", "7_5", "0_7", "4_7"];
+
+        // LVL 3
+        // this.column = [6, 2, 4, 3, 4, 4, 2, 6]
+        // this.row = [6, 2, 5, 3, 2, 5, 2, 6]
+        // this.bosses = [];
+        // this.drones = ["2_0", "4_0", "0_3", "0_5", "7_2", "7_4", "3_7", "5_7"];
+
+        // LVL 4
+        // this.column = [4, 1, 3, 4, 3, 3, 2, 6]
+        // this.row = [3, 1, 2, 6, 6, 1, 4, 3]
+        // this.bosses = ["1_2", "4_6"];
+        // this.drones = ["5_0", "7_0", "6_3", "1_4", "0_5", "2_7"];
+
+        // LVL 5
+        this.column = [3, 3, 3, 3, 6, 3, 2, 5]
+        this.row = [5, 2, 1, 4, 6, 4, 1, 5]
+        this.bosses = ["2_1", "5_2"];
+        this.drones = ["2_5", "4_5", "1_7", "3_7", "5_7"];
 
         this.board = []
 
@@ -111,6 +135,7 @@ class Level extends Phaser.Scene
                 tile.on('pointerover', function (pointer)
                 {
                     tile.setTintFill(PETROL)
+                    if (this.gameOver) {return}
 
                     if (pointer.isDown && tile.tileType == FLOOR_TILE){
                         if (this.selected.length == 1) {
@@ -137,6 +162,7 @@ class Level extends Phaser.Scene
                 }, this);
                 tile.on('pointerdown', function (pointer)
                 {
+                    if (this.gameOver) {return}
                     this.selected = [tile]
                     this.isSelectedWall = tile.frame.name == WALL_TILE
                     
@@ -224,23 +250,118 @@ class Level extends Phaser.Scene
     checkForWin(correctWalls) {
         let isWallCorrect = correctWalls == 2 * NUM_TILES
         console.log("walls correct", isWallCorrect)
-        // if (!isWallCorrect) {return false}
+        if (!isWallCorrect) {return false}
         
         // has every drone only one path?
         let isDroneCorrect = this.checkDrones()
         console.log("drones correct", isDroneCorrect)
+        if (!isDroneCorrect) {return false}
 
         // are all paths connected?
         let isAllPathsConnected = this.checkAllPathsConnected()
         console.log("paths connected", isAllPathsConnected)
+        if (!isAllPathsConnected) {return false}
 
         // are all bosses in a 3x3 room with only one entry?
+        let isBossRoomsCorrect = this.checkBossRooms()
+        console.log("boss rooms correct", isBossRoomsCorrect)
+        if (!isBossRoomsCorrect) {return false}
 
         // no 2x2 square except boss rooms
+        let isSquareRooms = this.checkSqareRooms()
+        console.log("2x2 rooms correct", isSquareRooms)
+        if (!isSquareRooms) {return false}
         
-        if(isWallCorrect && isDroneCorrect){
-            console.log("you win")
+        this.gameOver = true
+    }
+
+    checkSqareRooms() {
+        let checkTiles = [[0, 0], [0, 1], [1, 0], [1, 1]]
+
+        let squareRooms = 0
+
+        for (let y=0; y < NUM_TILES - 1; y++) {
+            for (let x=0; x < NUM_TILES - 1; x++) {
+                
+                let foundRoom = true
+
+                for (let j=0; j < checkTiles.length; j++) {
+                    let dx = checkTiles[j][0]
+                    let dy = checkTiles[j][1]
+                    let currentTile = this.board[x+dx][y+dy].frame.name
+                    
+                    if (currentTile == WALL_TILE) {
+                        foundRoom = false
+                        break
+                    }
+                }
+
+                if (foundRoom){
+                    squareRooms++
+                }
+            }
         }
+
+        // every boss room are 4 2x2 square rooms, so we need to count that in
+        return this.bosses.length * 4 == squareRooms
+
+    }
+
+    checkBossRooms() {
+        let checkTiles = [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
+        let outerRim = [[-1, 0], [-1, 1], [-1, 2], [0, 3], [1, 3], [2, 3], [3, 0], [3, 1], [3, 2], [0, -1], [1, -1], [2, -1]]
+
+        let bossRoomCounter = 0
+
+        for (let y=0; y < NUM_TILES - 2; y++) {
+            for (let x=0; x < NUM_TILES - 2; x++) {
+                
+                let foundRoom = true
+                let bossCounter = 0
+
+                for (let j=0; j < checkTiles.length; j++) {
+                    let dx = checkTiles[j][0]
+                    let dy = checkTiles[j][1]
+                    let currentTile = this.board[x+dx][y+dy].frame.name
+                    
+                    if (currentTile == BOSS) {
+                        bossCounter++
+                    }
+                    else if (currentTile == FLOOR_TILE) {
+                        continue
+                    }
+                    else {
+                        foundRoom = false
+                        break
+                    }
+                }
+
+                if (foundRoom && bossCounter == 1) {
+                    let pathCounter = 0 
+
+                    for (let j=0; j < outerRim.length; j++) {
+                        let dx = outerRim[j][0]
+                        let dy = outerRim[j][1]
+
+                        let currentTile = null
+                        try {
+                            currentTile = this.board[x+dx][y+dy].frame.name
+                        } catch {
+                            continue
+                        }
+
+                        if (currentTile == FLOOR_TILE) {
+                            pathCounter++
+                        }
+                    }
+                    if (pathCounter == 1){
+                        bossRoomCounter++
+                    }
+                }
+            }
+        }
+        
+        return this.bosses.length == bossRoomCounter
     }
 
     checkAllPathsConnected() {
