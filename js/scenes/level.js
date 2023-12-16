@@ -15,10 +15,10 @@ const ORANGE_HASH = "#ed8b00"
 const MINT_HASH = "#aaf0d1"
 
 const SCALE = 1;
-const FLOOR_TILE = 37;
-const WALL_TILE = 44;
-const BOSS = 0
-const DRONE = 10
+const FLOOR_TILE = 36;
+const WALL_TILE = 37;
+const BOSS = 38
+const DRONE = 39
 
 
 class Level extends Phaser.Scene
@@ -34,12 +34,13 @@ class Level extends Phaser.Scene
     {
         this.gameOver = false
         this.maxRounds = 12
+        this.floor = "01"
 
         // LVL 1
-        // this.column = [1, 4, 2, 7, 0, 4, 4, 4]
-        // this.row = [3, 2, 5, 3, 4, 1, 4, 4]
-        // this.bosses = ["1_5"];
-        // this.drones = ["7_1", "2_2", "7_3", "7_5", "7_7"];
+        this.column = [1, 4, 2, 7, 0, 4, 4, 4]
+        this.row = [3, 2, 5, 3, 4, 1, 4, 4]
+        this.bosses = ["1_5"];
+        this.drones = ["7_1", "2_2", "7_3", "7_5", "7_7"];
 
         // LVL 2
         // this.column = [6, 2, 4, 1, 5 ,4, 4, 5]
@@ -60,10 +61,10 @@ class Level extends Phaser.Scene
         // this.drones = ["5_0", "7_0", "6_3", "1_4", "0_5", "2_7"];
 
         // LVL 5
-        this.column = [3, 3, 3, 3, 6, 3, 2, 5]
-        this.row = [5, 2, 1, 4, 6, 4, 1, 5]
-        this.bosses = ["2_1", "5_2"];
-        this.drones = ["2_5", "4_5", "1_7", "3_7", "5_7"];
+        // this.column = [3, 3, 3, 3, 6, 3, 2, 5]
+        // this.row = [5, 2, 1, 4, 6, 4, 1, 5]
+        // this.bosses = ["2_1", "5_2"];
+        // this.drones = ["2_5", "4_5", "1_7", "3_7", "5_7"];
 
         this.board = []
 
@@ -74,6 +75,7 @@ class Level extends Phaser.Scene
         this.rowText = []
         this.columnText = []
 
+        this.styleHeader = { color: WHITE_HASH, fontSize: "80px", stroke: GREY_HASH, strokeThickness: 8}
         this.styleDefault = { color: WHITE_HASH, fontSize: "60px", stroke: GREY_HASH, strokeThickness: 8}
         this.styleCorrect = { color: MINT_HASH, fontSize: "60px", stroke: GREY_HASH, strokeThickness: 8}
         this.styleFalse = { color: GREY_HASH, fontSize: "60px", stroke: GREY_HASH, strokeThickness: 8}
@@ -81,12 +83,22 @@ class Level extends Phaser.Scene
 
     preload ()
     {
-        this.load.image('bg', 'assets/sprites/headquarter.png')
+        this.load.image('bg', 'assets/tiles/skyscraper.avif')
         this.load.spritesheet('tileSprite', 'assets/tiles/match3.png', { frameWidth: TILE_WIDTH, frameHeight: TILE_HEIGHT });
     }
 
     create ()
     {
+        const bg = this.add.image(CANVAS_WIDTH/2 + 540, CANVAS_HEIGHT/2 + 150, "bg")
+            .setScale(4)
+
+        const rect = this.add.rectangle(20, 20, 410, 90, WHITE)
+            .setOrigin(0)
+            .setStrokeStyle(5, GREY, 0.5)
+
+        const header = this.add.text(30, 20, "Floor " + this.floor, this.styleHeader)
+            .setOrigin(0)
+
         let padX = (CANVAS_WIDTH - (NUM_TILES + 1) * TILE_WIDTH) / 2
         let padY = (CANVAS_HEIGHT - (NUM_TILES + 1) * TILE_HEIGHT) / 2
         
